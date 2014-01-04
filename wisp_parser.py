@@ -80,11 +80,16 @@ def cond_not(a):
 numeric_ops = ['+','-','*','/','**','mod','fact','floor','ceil','gt','lt','eq','not']
 
 conditional_ops = ['gt', 'lt', 'eq', 'not']
-        
+
+
+#TODO: define functions for 'or','and','nor','nand'
 op_dict = {'+': add, '-': subtract,'*': multiply, '/': divide, '**': power, 'mod': mod, \
-           'fact': factorial, 'if':if_statement, 'gt': cond_greater_than, 'lt': cond_less_than, 'eq': cond_equal_to, 'not': cond_not, \
-           'floor': floor, 'ceil': ceil}
-arg_num_dict = {'1': ['fact','floor','ceil','not','or','and','nor','nand'], '2': ['+','-','*','/','**','mod','gt','lt','eq'], '3': ['if']}
+           'fact': factorial, 'if':if_statement, 'gt': cond_greater_than, 'lt': cond_less_than, \
+           'eq': cond_equal_to, 'not': cond_not, 'floor': floor, 'ceil': ceil}
+arg_num_dict = {'1': ['fact','floor','ceil','not'], \
+                '2': ['+','-','*','/','**','mod','gt','lt','eq','or','and','nor','nand'], \
+                '3': ['if']
+               }
 
 def get_arg_num(op):
     for k in arg_num_dict.keys():
@@ -116,13 +121,17 @@ def top_level_parse(input):
 
 def collect_macro(macro_dict,node):
     if len(node.argList) != 2:
-        err_string = "define must be of the form (define name value)"
+        err_string = "Invalid define.  define must be of the form (define name value)"
+        raise ParseError(err_string)
+    if node.argList[0].isalpha() != True:
+        err_string = "invalid define name: %s. Define name must be an alphabetic character" 
+            % (node.argList[0])
         raise ParseError(err_string)
     macro_dict[node.argList[0]] = node.argList[1]
 
 def collect_func(func_dict, node):
     if len(node.argList) < 3:
-        err_string = "func must be of the form (define name args value)"
+        err_string = "func must be of the form (define name args body)"
         raise ParseError(err_string)
     func_dict[node.argList[0]] = node.argList[1:]
     
