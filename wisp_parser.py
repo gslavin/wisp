@@ -124,7 +124,7 @@ def collect_macro(macro_dict,node):
         err_string = "Invalid define.  define must be of the form (define name value)"
         raise ParseError(err_string)
     if node.argList[0].isalpha() != True:
-        err_string = "invalid define name: %s. Define name must be an alphabetic character" 
+        err_string = "invalid define name: %s. Define name must be an alphabetic character" \
             % (node.argList[0])
         raise ParseError(err_string)
     macro_dict[node.argList[0]] = node.argList[1]
@@ -202,21 +202,20 @@ def eval_tree(tree, func_dict):
    
     #numeric ops
     if tree.op in numeric_ops:
-        #evaluation args that are not primitives
-        for i in range(len(tree.argList)):
-            if isinstance(tree.argList[i], Node):
-                tree.argList[i] = eval_tree(tree.argList[i], func_dict)
-        #check that all args are numeric
-        args = []
-        for a in tree.argList:
-            try:
-                args.append(float(a))
-            except ValueError:
-                err_string = "ERROR:invalid arg %s for operator %s" % (a,tree.op)
-                raise ParseError(err_string)
         #check that number of arguments is 2
-        
-        if (len(args) == get_arg_num(tree.op)):
+        if len(tree.argList) == get_arg_num(tree.op):
+            #evaluation args that are not primitives
+            for i in range(len(tree.argList)):
+                if isinstance(tree.argList[i], Node):
+                    tree.argList[i] = eval_tree(tree.argList[i], func_dict)
+            #check that all args are numeric
+            args = []
+            for a in tree.argList:
+                try:
+                    args.append(float(a))
+                except ValueError:
+                    err_string = "ERROR:invalid arg %s for operator %s" % (a,tree.op)
+                    raise ParseError(err_string)
             func = op_dict[tree.op]
             #give elements of list of args
             ans = func(*args)
@@ -224,17 +223,20 @@ def eval_tree(tree, func_dict):
         else:
             err_string = "ERROR: wrong number of arguments for %s operator" % (tree.op,)
             raise ParseError(err_string)
-    
-    
     #if statement
-    if tree.op == 'if':
+    elif tree.op == 'if':
         if (len(tree.argList) == get_arg_num(tree.op)):
             if isinstance(tree.argList[0], Node):
                     tree.argList[0] = eval_tree(tree.argList[0], func_dict)
-            if tree.argList[0]:
+                    
+            if tree.argList[0] == 1:
                 i = 1
-            else:
+            elif tree.argList[0] == 0:
                 i = 2
+            else:
+                err_string = "ERROR:arg %s (condition arg) must eval to 0 or 1 for %s" % (tree.argList[0],tree.op)
+                raise ParseError(err_string)
+            #eval only the correct body of the if statement
             if isinstance(tree.argList[i], Node):
                     tree.argList[i] = eval_tree(tree.argList[i], func_dict)
             try:
@@ -247,6 +249,34 @@ def eval_tree(tree, func_dict):
         else:
             err_string = "ERROR: wrong number of arguments for %s operator" % (tree.op,)
             raise ParseError(err_string)
+    #or statement
+    #check that a 1 is not present
+    #then eval nodes in order
+    elif tree.op == 'or':
+        #check that number of arguments is 2
+        if len(tree.argList) == get_arg_num(tree.op):
+            if "1" in tree.argList:
+                return 1
+            #evaluation args that are not primitives
+            #check if 1 is result of evaluation
+            for i in range(len(tree.argList)):
+                if isinstance(tree.argList[i], Node):
+                    tree.argList[i] = eval_tree(tree.argList[i], func_dict)
+                if tree.argList[i] == "1":
+                    return 1
+            #check that all args are numeric
+            args = []
+            for a in tree.argList:
+                try:
+                    args.append(float(a))
+                except ValueError:
+                    err_string = "ERROR:invalid arg %s for operator %s" % (a,tree.op)
+                    raise ParseError(err_string)
+            return 0
+        else:
+            err_string = "ERROR: wrong number of arguments for %s operator" % (tree.op,)
+            raise ParseError(err_string)
+
     #user defined functions
     elif tree.op in func_dict.keys():
         #argument substitution 
