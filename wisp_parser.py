@@ -103,8 +103,8 @@ def get_arg_num(op):
 def top_level_parse(input):
    #get defines and then body as final expression
    tree = parse(input)
+   print("Top leve parse tree")
    print_tree(tree,0)
-   print(tree.argList)
    macro_dict = {}
    func_dict = {}
    for node in tree.argList[:-1]:
@@ -115,8 +115,6 @@ def top_level_parse(input):
        else:
             err_string = "Only defines and funcs can precede the body of the program"
             raise ParseError(err_string)
-   print("macros:",macro_dict)
-   print("funcs:",func_dict)
    return macro_dict, func_dict, tree.argList[-1]
 
 def collect_macro(macro_dict,node):
@@ -137,12 +135,14 @@ def collect_func(func_dict, node):
     
 #main expr parsing function
 def parse(input):
+    print("PARSE INPUT")
+    print(input)
     i = 0
     token = ""
     tokenFirst = True
     expr = Node(None,[])
     while ( i <= len(input)):
-        # if whitespace set token and continue
+        # if whitespace or end of file set token and continue
         if i == len(input) or input[i] == ' ':
             if token != '' and token != ' ' :
                 if tokenFirst:
@@ -177,7 +177,6 @@ def parse(input):
             token += input[i]
             i += 1
     return expr
-
     
 def substitute_macros(macro_dict,tree):
     for i in range(len(tree.argList)):
@@ -317,24 +316,42 @@ def match_parens(input):
             continue
         if close_paren > open_paren:
             raise ParseError("mismatched parenthesis at line %d" % (line_num,))
-    print(open_paren,close_paren)
     if open_paren != close_paren:
             raise ParseError("mismatched parenthesis")
             
+def remove_comments(input):
+    i = 0
+    j = 0
+    i = input.find(';', j)
+    j = input.find('\n',i)
+    while i != -1 and j != -1:
+        input = input[:i] + input[j+1:]
+        i = input.find(';', j)
+        j = input.find('\n',i)
+    #comment on last line of file might not have a newline
+    if i != -1:
+        input = input[:i]
+    
+    return input
+
+def remove_newlines(input):
+    input = input.replace("\r",' ')
+    input = input.replace("\n",' ')
+    return input
+    
 #run program
 def main(input):
     
-    print(input)
-    print(len(input))
     input = "start " + input
     try:
         match_parens(input)
-        input = input.replace("\r",' ')
-        input = input.replace("\n",' ')
+        input = remove_comments(input)
+        input = remove_newlines(input)
         macro_dict, func_dict,tree = top_level_parse(input)
         substitute_macros(macro_dict,tree)
         print("tree to eval...")
         print_tree(tree,0)
+        print("Func Dict: \n",func_dict)
         print()
         return eval_tree(tree,func_dict)
     except Exception as e:
