@@ -133,7 +133,7 @@ def collect_func(func_dict, node):
         raise ParseError(err_string)
     func_dict[node.argList[0]] = node.argList[1:]
     
-#main expr parsing function
+#main tokenization and parsing function
 def parse(input):
     print("PARSE INPUT")
     print(input)
@@ -142,9 +142,9 @@ def parse(input):
     tokenFirst = True
     expr = Node(None,[])
     while ( i <= len(input)):
-        # if whitespace or end of file set token and continue
+        # If whitespace or end of file set token and continue
         if i == len(input) or input[i] == ' ':
-            if token != '' and token != ' ' :
+            if token != '' and token != ' ':
                 if tokenFirst:
                     tokenFirst = False
                     expr.op = token
@@ -152,25 +152,13 @@ def parse(input):
                     expr.argList.append(token)
             token = ""
             i += 1
+        # If '(' parse sub expression and start new node
         elif input[i] == '(':
-            #find substring and start new node
-            i += 1
-            substring = ""
-            startParen = 1
-            endParen = 0
-            while startParen != endParen:
-                if input[i] == '(':
-                    startParen += 1
-                elif input[i] == ')':
-                    endParen += 1
-                    if startParen == endParen:
-                        i += 1
-                        break
-                else:
-                    pass
-                substring += input[i]
-                i += 1
+            substring,i = get_expression(input,i)
             new_expr = parse(substring)
+            # place the subexpression as the curren token
+            # This current requires there to be a space between
+            # a sub expression and the next argument
             token = new_expr
         else:
             #add char to token
@@ -178,6 +166,25 @@ def parse(input):
             i += 1
     return expr
     
+def get_expression(input,i):
+    i += 1 
+    substring = ""
+    startParen = 1
+    endParen = 0
+    while startParen != endParen:
+        if input[i] == '(':
+            startParen += 1
+        elif input[i] == ')':
+            endParen += 1
+            if startParen == endParen:
+                i += 1
+                break
+        else:
+            pass
+        substring += input[i]
+        i += 1
+    return substring,i
+
 def substitute_macros(macro_dict,tree):
     for i in range(len(tree.argList)):
         if isinstance(tree.argList[i],Node):
